@@ -14,6 +14,9 @@ export class Task {
   @Prop({ required: true, enum: ['pending', 'in-progress', 'completed'] })
   status: string;
 
+  @Prop({ required: true })
+  userId: string;
+
   @Prop()
   createdBy: string;
 

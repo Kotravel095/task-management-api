@@ -4,9 +4,10 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Tasks')
+@ApiBearerAuth()
 @Controller('task')
 @UseGuards(JwtAuthGuard)
 export class TaskController {
@@ -16,10 +17,13 @@ export class TaskController {
   ) {}
 
   @Get()
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', type: Number, example: 10 })
+  @ApiQuery({ name: 'status', required: false, description: 'Task status filter => pending, in-progress, completed', type: String, example: 'pending' })
   async findAll(
     @Request() req: any,
-    @Query('page') page = 1, 
-    @Query('limit') limit = 10, 
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
     @Query('status') status?: string,
   ) {
     const userId = req.user.id;

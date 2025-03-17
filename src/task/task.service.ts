@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskDocument } from './entities/task.entity';
+import { log } from 'node:console';
 
 @Injectable()
 export class TaskService {
@@ -12,7 +13,6 @@ export class TaskService {
   ) {}
 
   async findAll(page: number = 1, limit: number = 10, status?: string, userId?: string): Promise<object> {
-    // Implement the logic to fetch tasks based on the parameters
     const query = { userId };
     if (status) {
       query['status'] = status;
@@ -68,11 +68,32 @@ export class TaskService {
 
   async update(id: string, updateTaskDto: UpdateTaskDto, userId: string): Promise<object> {
     const task = await this.taskModel.findById(id);
+
+    console.log('task: ', task);
+    
     if (!task) {
       return {
         code: 400,
         status: "fail",
         message: "Task not found",
+      };
+    }
+
+    if (task.userId !== userId) {
+      return {
+        code: 403,
+        status: "fail",
+        message: "You are not authorized to delete this task",
+      };
+    }
+
+    const validStatuses = ['pending', 'in-progress', 'completed'];
+  
+    if (updateTaskDto.status && !validStatuses.includes(updateTaskDto.status)) {
+      return {
+        code: 400,
+        status: "fail",
+        message: "Invalid status. Valid statuses are: pending, in-progress, completed.",
       };
     }
 
@@ -100,18 +121,30 @@ export class TaskService {
 
   async remove(id: string, userId: string): Promise<object> {
     const task = await this.taskModel.findById(id);
+    
     if (!task) {
       return {
-        code: 500,
+        code: 404, 
         status: "fail",
-        message: "Not found id for delete",
+        message: "Task not found for the given id",
       };
     }
+  
+    if (task.userId !== userId) {
+      return {
+        code: 403,
+        status: "fail",
+        message: "You are not authorized to delete this task",
+      };
+    }
+  
     await this.taskModel.deleteOne({ _id: id });
+  
     return {
       code: 200,
       status: "success",
       message: "Task deleted successfully",
     };
   }
+  
 }

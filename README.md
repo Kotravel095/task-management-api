@@ -15,7 +15,8 @@ Before starting, ensure that you have the following software installed:
 
 4. create .env for example using config below
     ---------------------------------------------
-    MONGO_URI=mongodb://localhost:27017
+    PORT=3000
+    MONGO_URI=mongodb://mongo:27017
     MONGO_USER=Jeerawat
     MONGO_PASS=9f5de330042677f034f36a474bf1e3f1a2adbd0c
     MONGO_DBNAME=task_management_systam
@@ -23,7 +24,7 @@ Before starting, ensure that you have the following software installed:
     ---------------------------------------------
     
 5. for start => npm run start
-App;ication running at => http://localhost:3000
+Application running at => http://localhost:3000
 
 # API Documentation
 API Documenttation At => http://localhost:3000/api-docs
@@ -150,7 +151,20 @@ Response =>
 
 # Instructions for running the system in local development
 1. npm install
-2. npm run start:dev
+2. create .env.development for example using config below
+    ---------------------------------------------
+    PORT=3000
+    MONGO_URI=mongodb://localhost:27017
+    MONGO_USER=Jeerawat
+    MONGO_PASS=9f5de330042677f034f36a474bf1e3f1a2adbd0c
+    MONGO_DBNAME=task_management_systam
+    JWT_SECRET=104462eb8d06ad1585b59b8ef597483009ac662b
+    ---------------------------------------------
+3. if you have database you can config .env.development for your database
+4. if you dont have database run mongo on docker => docker-compose -f mongo-database.yaml up -d
+5. you can down docker compose mongo => docker-compose -f mongo-database.yaml down
+6. npm run start:dev
+Application running at => http://localhost:3000
 
 # Instructions for running the system via Docker
 1. Start Docker compose => docker-compose up -d
