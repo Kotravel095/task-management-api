@@ -1,8 +1,4 @@
-version: '3.8'
-
 services:
-
-  # Database (MongoDB)
   mongo:
     image: mongo:latest
     restart: always
@@ -16,7 +12,6 @@ services:
     networks:
       - app-network
 
-  # Task Management App
   app:
     build:
       context: .
