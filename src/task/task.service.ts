@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -7,23 +7,23 @@ import { Task, TaskDocument } from './entities/task.entity';
 
 @Injectable()
 export class TaskService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  constructor(
+    @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
+  ) {}
 
-  async findAll(page: number | null = 1, limit: number | null = 10, status?: string): Promise<object> {
-    page = page ?? 1;
-    limit = limit ?? 10;
+  async findAll(page: number = 1, limit: number = 10, status?: string, userId?: string): Promise<object> {
+    // Implement the logic to fetch tasks based on the parameters
+    const query = { userId };
+    if (status) {
+      query['status'] = status;
+    }
 
-    const query: any = {};
-    if (status) query.status = status;
+    const tasks = await this.taskModel.find(query)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
 
-    const data = await this.taskModel
-        .find(query)
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort({ createdAt: -1 })
-        .exec();
-
-    const total = await this.taskModel.countDocuments(query);
+    const total = await this.taskModel.countDocuments(query).exec();
 
     if (total === 0) {
       return {
@@ -36,14 +36,13 @@ export class TaskService {
     }
 
     return {
-        code: 200,
-        status: "success",
-        message: "success",
-        total: total,
-        data: data,
+      code: 200,
+      status: "success",
+      message: "success",
+      total: total,
+      data: tasks,
     };
   }
-
 
   async create(createTaskDto: CreateTaskDto, userId: string): Promise<object> {
     const validStatuses = ['pending', 'in-progress', 'completed'];
@@ -55,115 +54,64 @@ export class TaskService {
         message: "Invalid status. Valid statuses are: pending, in-progress, completed.",
       };
     }
-  
-    try {
-      const task = new this.taskModel({
-        ...createTaskDto,
-        createdBy: userId,
-        updatedBy: userId,
-      });
-  
-      const savedTask = await task.save();
 
-      if(savedTask === null) {
-        return {
-          code: 400,
-          status: "fail",
-          message: "fail for save",
-        };
-      }
-  
-      return {
-        code: 200,
-        status: "success",
-        message: "insert successfully",
-      };
-    } catch (error) {
-      return {
-        code: 500,
-        status: "fail",
-        message: "fail for save",
-      };
-    }
+    const newTask = new this.taskModel({ ...createTaskDto, userId });
+    const task = await newTask.save();
+
+    return {
+      code: 201,
+      status: "success",
+      message: "Task created successfully",
+      data: task,
+    };
   }
-  
 
   async update(id: string, updateTaskDto: UpdateTaskDto, userId: string): Promise<object> {
-    const validStatuses = ['pending', 'in-progress', 'completed'];
-  
-    try {
-      const task = await this.taskModel.findById(id);
-      if (!task) {
-        return {
-          code: 500,
-          status: "fail",
-          message: "not found id for update",
-        };
-      }
-  
-      if (updateTaskDto.status && !validStatuses.includes(updateTaskDto.status)) {
-        return {
-          code: 400,
-          status: "fail",
-          message: "Invalid status. Valid statuses are: pending, in-progress, completed.",
-        };
-      }
-  
-      task.title = updateTaskDto.title || task.title;
-      task.description = updateTaskDto.description || task.description;
-      task.status = updateTaskDto.status || task.status;
-      task.updatedBy = userId;
-  
-      const updatedTask = await task.save();
-
-      if(updatedTask === null) {
-        return {
-          code: 400,
-          status: "fail",
-          message: "fail for update",
-        };
-      }
-  
+    const task = await this.taskModel.findById(id);
+    if (!task) {
       return {
-        code: 200,
-        status: "success",
-        message: "update successfully",
+        code: 400,
+        status: "fail",
+        message: "Task not found",
       };
-    } catch (error) {
+    }
+
+    task.title = updateTaskDto.title || task.title;
+    task.description = updateTaskDto.description || task.description;
+    task.status = updateTaskDto.status || task.status;
+    task.updatedBy = userId;
+
+    const updatedTask = await task.save();
+
+    if (updatedTask === null) {
       return {
         code: 400,
         status: "fail",
         message: "fail for update",
       };
     }
-  }
-  
-  
 
-  async remove(id: string): Promise<object> {
-    try {
-      const task = await this.taskModel.findById(id);
-      if (!task) {
-        return {
-          code: 500,
-          status: "fail",
-          message: "Not found id for delete",
-        };
-      }
-  
-      await this.taskModel.deleteOne({ _id: id });
-      return {
-        code: 200,
-        status: "success",
-        message: "Task deleted successfully",
-      };
-    } catch (error) {
+    return {
+      code: 200,
+      status: "success",
+      message: "update successfully",
+    };
+  }
+
+  async remove(id: string, userId: string): Promise<object> {
+    const task = await this.taskModel.findById(id);
+    if (!task) {
       return {
         code: 500,
         status: "fail",
-        message: "Failed to delete task",
+        message: "Not found id for delete",
       };
     }
+    await this.taskModel.deleteOne({ _id: id });
+    return {
+      code: 200,
+      status: "success",
+      message: "Task deleted successfully",
+    };
   }
-  
 }
