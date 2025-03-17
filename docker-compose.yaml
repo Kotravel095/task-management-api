@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+
+  # Database (MongoDB)
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+  # Task Management App
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-management-app
+    restart: always
+    environment:
+      - PORT=${PORT}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    volumes:
+      - ./src:/app/src
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
